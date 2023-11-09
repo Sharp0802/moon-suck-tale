@@ -31,7 +31,7 @@ void OnUpdate(DOUBLE delta)
 	BITMAP bm;
 
 	char buf[256];
-	int wrt = snprintf(buf, sizeof buf, "fps:%c %d", buf[0], (int)(1 / delta));
+	int wrt = snprintf(buf, sizeof buf, "fps:%5d", (int)(1 / delta));
 
 	InvalidateRect(hWnd, &winSize, TRUE);
 

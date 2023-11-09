@@ -30,8 +30,10 @@ void OnUpdate(DOUBLE delta)
 	HDC hdc, mem, old;
 	BITMAP bm;
 
+	RECT fpsRect = { 10, 10, 100, 20 };
+
 	char buf[256];
-	int wrt = snprintf(buf, sizeof buf, "fps:%c %d", buf[0], (int)(1 / delta));
+	int wrt = snprintf(buf, sizeof buf, "fps:%5d", (int)(1 / delta));
 
 	InvalidateRect(hWnd, &winSize, TRUE);
 
@@ -40,6 +42,7 @@ void OnUpdate(DOUBLE delta)
 	old = SelectObject(mem, g_hbmTest);
 
 	TextOutA(hdc, 10, 10, buf, wrt);
+	DrawTextA(hdc, buf, wrt, fpsRect, );
 
 	GetObject(g_hbmTest, sizeof bm, &bm);
 	BitBlt(hdc, 100, 100, bm.bmWidth, bm.bmHeight, mem, 0, 0, SRCCOPY);

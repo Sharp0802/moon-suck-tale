@@ -76,7 +76,7 @@ RECT Input_GetWindowRect()
 	RECT rect = {0, 0, 0, 0};
 	HWND hWnd = GetConsoleWindow();
 
-	if (!GetWindowRect(hWnd, &rect))
+	if (!GetClientRect(hWnd, &rect))
 		return rect;
 
 	return rect;

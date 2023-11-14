@@ -108,7 +108,7 @@ int main()
 		elapsed = end.QuadPart - start.QuadPart;
 		start = end;
 	}
-	OnDestroy();
+	OnDestroyInternal();
 
 	/* FINALIZE */
 	CoUninitialize();

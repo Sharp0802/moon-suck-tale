@@ -1,12 +1,12 @@
 #include "events.h"
 #include "sys.h"
 #include "error.h"
+#include "egdi/egdi.h"
 
 #define EXIT_TEXT "Press any key to quit..."
 
 
 HBITMAP g_hbmTest = NULL;
-
 
 LPCTSTR g_fonts[] = {
 		TEXT("res\\font\\DeterminationMonoK2.ttf"),
@@ -16,8 +16,12 @@ LPCTSTR g_fonts[] = {
 HFONT g_font_sans;
 HFONT g_font_mono;
 
+HDC g_hdc, g_mem;
+
 void OnInit()
 {
+	EGDI_Initialize();
+
 	g_hbmTest = LoadImage(
 			GetModuleHandle(NULL),
 			TEXT("res\\test.bmp"),
@@ -57,6 +61,9 @@ void OnInit()
 			TEXT("DeterminationSansK2"));
 	if (!g_font_sans)
 		DialogWin32Code(GetLastError());
+
+	g_hdc = GetDC(GetConsoleWindow());
+	g_mem = CreateCompatibleDC(g_hdc);
 }
 
 void OnUpdate(DOUBLE delta)
@@ -65,30 +72,39 @@ void OnUpdate(DOUBLE delta)
 
 	HWND hWnd = GetConsoleWindow();
 	PAINTSTRUCT ps;
-	HDC hdc, mem;
 	HFONT oldFnt;
 	RECT winSize;
+	BITMAP bm;
 
 	GetClientRect(hWnd, &winSize);
+
 
 	char buf[256];
 	int wrt = snprintf(buf, sizeof buf, "fps:%5d", (int)(1 / delta));
 
-	/* INITIALIZE */
-	RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE);
+	/*
+	HText ht = Text.Load(RenderContext->m_root, NULL);
 
-	hdc = BeginPaint(hWnd, &ps);
-	mem = CreateCompatibleDC(hdc);
+	ht->Vtbl.SetValue(ht, L"hello!");
+	ht->Vtbl.SetFont(ht, g_font_sans);
 
-	/* FRAME*/
-	oldFnt = SelectObject(hdc, g_font_sans);
-	DrawTextA(hdc, buf, wrt, &winSize, DT_NOCLIP);
-	SelectObject(hdc, oldFnt);
+	ht->Vtbl.Release(ht);
 
-	/* FINALIZE */
-	DeleteDC(mem);
+	EGDI_Render();
+*/
 
-	EndPaint(hWnd, &ps);
+	/* FRAME */
+
+	oldFnt = SelectObject(g_hdc, g_font_sans);
+	TextOutA(g_hdc, 0, 0, buf, wrt);
+
+	HBITMAP oldBbm = SelectObject(g_mem, g_hbmTest);
+	GetObject(g_hbmTest, sizeof(bm), &bm);
+	if (!BitBlt(g_hdc, 0, 100, bm.bmWidth, bm.bmHeight, g_mem, 0, 0, SRCCOPY))
+		DialogWin32Code(GetLastError());
+
+	SelectObject(g_mem, oldBbm);
+	SelectObject(g_hdc, oldFnt);
 
 	/* EXIT GRACEFULLY */
 	if (Input.GetKey(VK_ESCAPE))
@@ -104,6 +120,9 @@ void OnUpdate(DOUBLE delta)
 
 void OnDestroy()
 {
+	DeleteDC(g_mem);
+	ReleaseDC(GetConsoleWindow(), g_hdc);
+
 	DeleteObject(g_hbmTest);
 	DeleteObject(g_font_mono);
 	DeleteObject(g_font_sans);

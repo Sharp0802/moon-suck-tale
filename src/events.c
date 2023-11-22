@@ -9,7 +9,30 @@ static COORD s_dwMouseCoord;
 static DWORD s_dwMouseButton;
 static COORD s_dwWindowSize;
 
+/* INTERNALS */
+static DWORD s_dwPreferredFrequency;
+static DWORD s_dwFrequencyOffset = 0; // should be zero
+
 static volatile unsigned char s_input[UINT8_MAX];
+
+BOOLEAN NanoSleep(LONGLONG ns)
+{
+	HANDLE timer;
+	LARGE_INTEGER li;
+
+	if(!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+		return FALSE;
+
+	li.QuadPart = -ns;
+	if(!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)){
+		CloseHandle(timer);
+		return FALSE;
+	}
+
+	WaitForSingleObject(timer, INFINITE);
+	CloseHandle(timer);
+	return TRUE;
+}
 
 void OnInput(INPUT_RECORD ir)
 {
@@ -56,6 +79,12 @@ void OnUpdateInternal(DOUBLE delta)
 {
 	OnUpdate(delta);
 
+	DOUBLE slp = (1000.0 / (s_dwPreferredFrequency + s_dwFrequencyOffset)) - delta * 1000;
+	if (slp > 1)
+	{
+		NanoSleep((int)(slp * 1000));
+	}
+
 	/* RESET STATE */
 	memset((void*)s_input, 0, sizeof s_input);
 }
@@ -100,6 +129,12 @@ COORD Input_GetMousePosition(void)
 
 void OnInitInternal(void)
 {
+	DEVMODEA devMode;
+	if (!EnumDisplaySettingsA(NULL, ENUM_CURRENT_SETTINGS, &devMode))
+		DialogWin32Code(GetLastError());
+
+	s_dwPreferredFrequency = devMode.dmDisplayFrequency;
+
 	Input.GetKey = Input_GetKey;
 	Input.GetMouseButton = Input_GetMouseButton;
 	Input.GetMousePosition = Input_GetMousePosition;
